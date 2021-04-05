@@ -1,8 +1,14 @@
 OSCBridge{
 	var oscDest;
 
+	*new {
+		arg ip="127.0.0.1", port=10000;
+		^super.new.init(ip, port)
+	}
+
 	init {
-		oscDest = NetAddr("127.0.0.1", 10000);
+		arg ip, port;
+		oscDest = NetAddr(ip, port);
 	}
 
 	sendSignal {
@@ -16,5 +22,20 @@ OSCBridge{
 	//create sendreply
 	SendReply.kr(Impulse.kr(gatedFPS), address, signal, -1);
 	address;
+	}
+}
+
+
+MyClass {
+	var message;
+	*method {
+		arg argument;
+		this.message = argument;
+		"Test".postln;
+		argument.postln;
+	}
+	*print {
+		arg argument;
+		this.message.postln;
 	}
 }

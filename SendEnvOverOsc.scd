@@ -1,6 +1,24 @@
+s.boot;
+s.plotTree
+ServerOptions.devices; // all devices
+
 (
-var oscBridge=OSCBridge.new;
-oscBridge.init;
+Server.default.options.inDevice_("Fireface UC Mac (23557042)");
+Server.default.options.outDevice_("Fireface UC Mac (23557042)");
+s.boot;
+)
+
+
+///////////////////////////////////////////////////
+// This demo sends the envelope signal of a kickdrum via OSC on the port defined in "SendEnvOcerOsc.scd"
+// ToDo:
+// * Fix Bug: After restarting the pattern, no OSC messages are send any more. A restart of the synthDef is needed
+///////////////////////////////////////////////////
+(
+//var oscBridge=OSCBridge.new;
+//oscBridge.init;
+
+~oscbridge = OSCBridge.new("127.0.0.1", 10000);
 
 //Kick-Drum:
 
@@ -10,7 +28,7 @@ SynthDef.new(\kick, {
 	var sig, env, freqSweep, oscAddress="/kick";
 	freqSweep = Env([freqA, freqB, freqC], [freqDur1, freqDur2],[freqC1, freqC2]).ar;
 	env = Env([0, 1, 0], [att, rel], [c1, c2]).kr(doneAction: 2);
-	oscBridge.sendSignal(oscAddress, env, oscGate);
+	~oscbridge.sendSignal(oscAddress, env, oscGate);
 	sig = SinOsc.ar(freqSweep, pi/2);
 	sig = sig * env;
 	sig = Pan2.ar(sig, pan, amp);
@@ -18,20 +36,22 @@ SynthDef.new(\kick, {
 }).add;
 
 //Group:
-g = Group.new;
+g = Group.new; // the group is needed to take care, that just the last object (of thy polyphone sound) is sending it's signal
 
 //Pattern:
 
 Pbind(
 	\instrument, \kick,
-	\dur, 2 * Pseq([1, 0.25, 0.75], inf),
+	\dur, 2 * Pseq([0.4, 0.1, 0.2], inf),
 	\amp, 0.8,
 	\freqA, 700,
 	\att, 0.035,
 	\rel, 1,
 	\group, g,
 	\finish, {
-		s.makeBundle(s.latency - 0.01, { g.set(\oscGate, 0) });
+		s.makeBundle(s.latency - 0.02, { g.set(\oscGate, 0) }); // by setting the oscGates of all objects in the group to 0, just the new next new added object will send its signal.
 	}
 ).play;
 )
+
+x = Synth.new(\kick, [\amp, 1, \freqA, 400, \freqDur2, 0.5]);
